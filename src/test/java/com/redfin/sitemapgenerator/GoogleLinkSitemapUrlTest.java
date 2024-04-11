@@ -1,10 +1,11 @@
 package com.redfin.sitemapgenerator;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
-import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -14,34 +15,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class GoogleLinkSitemapUrlTest {
 
-	File dir;
-	GoogleLinkSitemapGenerator wsg;
-
-	@BeforeEach
-	public void setUp() throws Exception {
-
-		dir = File.createTempFile(GoogleLinkSitemapUrlTest.class.getSimpleName(), "");
-		dir.delete();
-		dir.mkdir();
-		dir.deleteOnExit();
-	}
-
-	@AfterEach
-	public void tearDown() {
-
-		wsg = null;
-		for (final File file : dir.listFiles()) {
-			file.deleteOnExit();
-			file.delete();
-		}
-		dir.delete();
-		dir = null;
-	}
 
 	@Test
-	void testSimpleUrlWithHrefLang() throws Exception {
+	void testSimpleUrlWithHrefLang(@TempDir Path tempDir) throws Exception {
 
-		wsg = new GoogleLinkSitemapGenerator("https://www.example.com", dir);
+		GoogleLinkSitemapGenerator wsg = new GoogleLinkSitemapGenerator("https://www.example.com", tempDir);
 		final Map<String, Map<String, String>> alternates = new LinkedHashMap<String, Map<String, String>>();
 		alternates.put("https://www.example/en/index.html", Collections.singletonMap("hreflang", "en-GB"));
 		alternates.put("https://www.example/fr/index.html", Collections.singletonMap("hreflang", "fr-FR"));
@@ -76,9 +54,9 @@ class GoogleLinkSitemapUrlTest {
 	}
 
 	@Test
-	void testSimpleUrlWithMedia() throws Exception {
+	void testSimpleUrlWithMedia(@TempDir Path tempDir) throws Exception {
 
-		wsg = new GoogleLinkSitemapGenerator("https://www.example.com", dir);
+		GoogleLinkSitemapGenerator wsg = new GoogleLinkSitemapGenerator("https://www.example.com", tempDir);
 		final Map<String, Map<String, String>> alternates = new LinkedHashMap<String, Map<String, String>>();
 		alternates.put("https://www.example/en/index.html", Collections.singletonMap("media", "only screen and (max-width: 640px)"));
 		alternates.put("https://www.example/fr/index.html", Collections.singletonMap("media", "only screen and (max-width: 640px)"));
@@ -112,11 +90,11 @@ class GoogleLinkSitemapUrlTest {
 		assertEquals(expected, sitemap);
 	}
 
-	private String writeSingleSiteMap(final GoogleLinkSitemapGenerator wsg) {
+	private String writeSingleSiteMap(final GoogleLinkSitemapGenerator wsg) throws IOException {
 
-		final List<File> files = wsg.write();
+		final List<Path> files = wsg.write();
 		assertEquals(1, files.size(), "Too many files: " + files.toString());
-		assertEquals("sitemap.xml", files.get(0).getName(), "Sitemap misnamed");
-		return TestUtil.slurpFileAndDelete(files.get(0));
+		assertEquals("sitemap.xml", files.get(0).getFileName().toString(), "Sitemap misnamed");
+		return Files.readString(files.get(0));
 	}
 }

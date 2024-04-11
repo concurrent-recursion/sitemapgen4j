@@ -33,7 +33,7 @@ First, add this as a dependency to your POM:
 <dependency>
     <groupId>io.gdcc</groupId>
     <artifactId>sitemapgen4j</artifactId>
-    <version>2.2.0</version>
+    <version>2.2.1</version>
 </dependency>
 ```
 
@@ -138,7 +138,7 @@ wsg.addUrl("https://www.example.com/index.html");
 wsg.write();
 ```
 
-You can also use the SitemapValidator directly to manage sitemaps.  It has two methods: validateWebSitemap(File f) and validateSitemapIndex(File f).
+You can also use the SitemapValidator directly to manage sitemaps.  It has two methods: validateWebSitemap(Path f) and validateSitemapIndex(Path f).
 
 ## Google-specific sitemaps
 
@@ -150,6 +150,28 @@ To generate a special type of sitemap, just use GoogleImageSitemapGenerator, Goo
 You can't mix-and-match regular URLs with Google-specific sitemaps, so you'll also have to use a GoogleImageSitemapUrl, GoogleNewsSitemapUrl, or GoogleVideoSitemapUrl instead of a WebSitemapUrl.  Each of them has unique configurable options not available to regular web URLs.  
 
 ## Release Notes
+
+### v2.2.1
+
+#### 🌟 FEATURES
+- none
+
+####  💔 BREAKING CHANGES
+- Changed java.io classes to use java.nio classes
+
+#### 🏹 BUG FIXES
+- (none)
+
+### v2.2.0
+#### 🌟 FEATURES
+- none
+
+####  💔 BREAKING CHANGES
+- Changed java.util.Date to use java.time.OffsetDateTime
+- Refactored W3CDateFormat for OffsetDateTime changes
+
+#### 🏹 BUG FIXES
+- (none)
 
 ### v2.1.2
 

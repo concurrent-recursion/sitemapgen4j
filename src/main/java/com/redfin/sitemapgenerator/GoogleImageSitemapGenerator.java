@@ -1,11 +1,11 @@
 package com.redfin.sitemapgenerator;
 
-import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.file.Path;
 
 /**
- * Builds a sitemap for Google Image search. To configure options use {@link #builder(URL, File)}
+ * Builds a sitemap for Google Image search. To configure options use {@link #builder(URL, Path)}
  * @see <a href="https://developers.google.com/search/docs/crawling-indexing/sitemaps/image-sitemaps">Google Developer: Image Sitemaps</a>
  * */
 public class GoogleImageSitemapGenerator extends SitemapGenerator<GoogleImageSitemapUrl, GoogleImageSitemapGenerator> {
@@ -20,7 +20,7 @@ public class GoogleImageSitemapGenerator extends SitemapGenerator<GoogleImageSit
      * @param baseDir Sitemap files will be generated in this directory as either "sitemap.xml" or "sitemap1.xml" "sitemap2.xml" and so on.
      * @throws MalformedURLException In case the given baseUrl is invalid
      */
-    public GoogleImageSitemapGenerator(String baseUrl, File baseDir)
+    public GoogleImageSitemapGenerator(String baseUrl, Path baseDir)
             throws MalformedURLException {
         this(new SitemapGeneratorOptions(baseUrl, baseDir));
     }
@@ -30,7 +30,7 @@ public class GoogleImageSitemapGenerator extends SitemapGenerator<GoogleImageSit
      * @param baseUrl All URLs in the generated sitemap(s) should appear under this base URL
      * @param baseDir Sitemap files will be generated in this directory as either "sitemap.xml" or "sitemap1.xml" "sitemap2.xml" and so on.
      */
-    public GoogleImageSitemapGenerator(URL baseUrl, File baseDir) {
+    public GoogleImageSitemapGenerator(URL baseUrl, Path baseDir) {
         this(new SitemapGeneratorOptions(baseUrl, baseDir));
     }
 
@@ -60,7 +60,7 @@ public class GoogleImageSitemapGenerator extends SitemapGenerator<GoogleImageSit
      * @param baseDir Sitemap files will be generated in this directory as either "sitemap.xml" or "sitemap1.xml" "sitemap2.xml" and so on.
      * @return a builder; call .build() on it to make a sitemap generator
      */
-    public static SitemapGeneratorBuilder<GoogleImageSitemapGenerator> builder(URL baseUrl, File baseDir) {
+    public static SitemapGeneratorBuilder<GoogleImageSitemapGenerator> builder(URL baseUrl, Path baseDir) {
         return new SitemapGeneratorBuilder<>(baseUrl, baseDir, GoogleImageSitemapGenerator.class);
     }
 
@@ -71,7 +71,7 @@ public class GoogleImageSitemapGenerator extends SitemapGenerator<GoogleImageSit
      * @return a builder; call .build() on it to make a sitemap generator
      * @throws MalformedURLException In case the given baseUrl is invalid
      */
-    public static SitemapGeneratorBuilder<GoogleImageSitemapGenerator> builder(String baseUrl, File baseDir) throws MalformedURLException {
+    public static SitemapGeneratorBuilder<GoogleImageSitemapGenerator> builder(String baseUrl, Path baseDir) throws MalformedURLException {
         return new SitemapGeneratorBuilder<>(baseUrl, baseDir, GoogleImageSitemapGenerator.class);
     }
 

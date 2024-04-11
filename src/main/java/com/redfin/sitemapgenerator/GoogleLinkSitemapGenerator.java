@@ -1,9 +1,9 @@
 package com.redfin.sitemapgenerator;
 
-import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -56,7 +56,7 @@ public class GoogleLinkSitemapGenerator extends SitemapGenerator<GoogleLinkSitem
 	 *			"sitemap1.xml" "sitemap2.xml" and so on.
 	 * @return a builder; call .build() on it to make a sitemap generator
 	 */
-	public static SitemapGeneratorBuilder<GoogleLinkSitemapGenerator> builder(final String baseUrl, final File baseDir)
+	public static SitemapGeneratorBuilder<GoogleLinkSitemapGenerator> builder(final String baseUrl, final Path baseDir)
 		throws MalformedURLException {
 
 		return new SitemapGeneratorBuilder<>(baseUrl, baseDir,
@@ -73,7 +73,7 @@ public class GoogleLinkSitemapGenerator extends SitemapGenerator<GoogleLinkSitem
 	 *			"sitemap1.xml" "sitemap2.xml" and so on.
 	 * @return a builder; call .build() on it to make a sitemap generator
 	 */
-	public static SitemapGeneratorBuilder<GoogleLinkSitemapGenerator> builder(final URL baseUrl, final File baseDir) {
+	public static SitemapGeneratorBuilder<GoogleLinkSitemapGenerator> builder(final URL baseUrl, final Path baseDir) {
 
 		return new SitemapGeneratorBuilder<>(baseUrl, baseDir,
 				GoogleLinkSitemapGenerator.class);
@@ -101,7 +101,7 @@ public class GoogleLinkSitemapGenerator extends SitemapGenerator<GoogleLinkSitem
 	 *			"sitemap1.xml" "sitemap2.xml" and so on.
 	 * @throws MalformedURLException In case the given baseUrl is invalid
 	 */
-	public GoogleLinkSitemapGenerator(final String baseUrl, final File baseDir) throws MalformedURLException {
+	public GoogleLinkSitemapGenerator(final String baseUrl, final Path baseDir) throws MalformedURLException {
 		this(new SitemapGeneratorOptions(baseUrl, baseDir));
 	}
 
@@ -126,7 +126,7 @@ public class GoogleLinkSitemapGenerator extends SitemapGenerator<GoogleLinkSitem
 	 *			Sitemap files will be generated in this directory as either "sitemap.xml" or
 	 *			"sitemap1.xml" "sitemap2.xml" and so on.
 	 */
-	public GoogleLinkSitemapGenerator(final URL baseUrl, final File baseDir) {
+	public GoogleLinkSitemapGenerator(final URL baseUrl, final Path baseDir) {
 		this(new SitemapGeneratorOptions(baseUrl, baseDir));
 	}
 

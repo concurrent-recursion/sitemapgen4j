@@ -1,17 +1,17 @@
 package com.redfin.sitemapgenerator;
 
-import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.file.Path;
 
 class SitemapGeneratorOptions extends
 		AbstractSitemapGeneratorOptions<SitemapGeneratorOptions> {
 
-	public SitemapGeneratorOptions(URL baseUrl, File baseDir) {
+	public SitemapGeneratorOptions(URL baseUrl, Path baseDir) {
 		super(baseUrl, baseDir);
 	}
 	
-	public SitemapGeneratorOptions(String baseUrl, File baseDir) throws MalformedURLException {
+	public SitemapGeneratorOptions(String baseUrl, Path baseDir) throws MalformedURLException {
 		this(new URL(baseUrl), baseDir);
 	}
 	

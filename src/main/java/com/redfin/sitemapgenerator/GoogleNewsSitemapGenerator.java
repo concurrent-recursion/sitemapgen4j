@@ -1,11 +1,11 @@
 package com.redfin.sitemapgenerator;
 
-import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.file.Path;
 
 /**
- * Builds a sitemap for Google News.  To configure options, use {@link #builder(URL, File)}
+ * Builds a sitemap for Google News.  To configure options, use {@link #builder(URL, Path)}
  * @author Dan Fabulich
  * @see <a href="https://developers.google.com/search/docs/crawling-indexing/sitemaps/news-sitemap">Google Developer: News Sitemap</a>
  */
@@ -17,7 +17,7 @@ public class GoogleNewsSitemapGenerator extends SitemapGenerator<GoogleNewsSitem
 	 * @param baseDir Sitemap files will be generated in this directory as either "sitemap.xml" or "sitemap1.xml" "sitemap2.xml" and so on.
 	 * @return a builder; call .build() on it to make a sitemap generator
 	 */
-	public static SitemapGeneratorBuilder<GoogleNewsSitemapGenerator> builder(URL baseUrl, File baseDir) {
+	public static SitemapGeneratorBuilder<GoogleNewsSitemapGenerator> builder(URL baseUrl, Path baseDir) {
 		SitemapGeneratorBuilder<GoogleNewsSitemapGenerator> builder = 
 			new SitemapGeneratorBuilder<>(baseUrl, baseDir, GoogleNewsSitemapGenerator.class);
 		builder.maxUrls = 1000;
@@ -30,7 +30,7 @@ public class GoogleNewsSitemapGenerator extends SitemapGenerator<GoogleNewsSitem
 	 * @param baseDir Sitemap files will be generated in this directory as either "sitemap.xml" or "sitemap1.xml" "sitemap2.xml" and so on.
 	 * @return a builder; call .build() on it to make a sitemap generator
 	 */
-	public static SitemapGeneratorBuilder<GoogleNewsSitemapGenerator> builder(String baseUrl, File baseDir) throws MalformedURLException {
+	public static SitemapGeneratorBuilder<GoogleNewsSitemapGenerator> builder(String baseUrl, Path baseDir) throws MalformedURLException {
 		SitemapGeneratorBuilder<GoogleNewsSitemapGenerator> builder = 
 			new SitemapGeneratorBuilder<>(baseUrl, baseDir, GoogleNewsSitemapGenerator.class);
 		builder.maxUrls = SitemapConstants.GOOGLE_NEWS_MAX_URLS_PER_SITEMAP;
@@ -51,7 +51,7 @@ public class GoogleNewsSitemapGenerator extends SitemapGenerator<GoogleNewsSitem
 	 * @param baseDir Sitemap files will be generated in this directory as either "sitemap.xml" or "sitemap1.xml" "sitemap2.xml" and so on.
 	 * @throws MalformedURLException In case the given baseUrl is invalid
 	 */
-	public GoogleNewsSitemapGenerator(String baseUrl, File baseDir)
+	public GoogleNewsSitemapGenerator(String baseUrl, Path baseDir)
 			throws MalformedURLException {
 		this(new SitemapGeneratorOptions(baseUrl, baseDir));
 	}
@@ -61,7 +61,7 @@ public class GoogleNewsSitemapGenerator extends SitemapGenerator<GoogleNewsSitem
 	 * @param baseUrl All URLs in the generated sitemap(s) should appear under this base URL
 	 * @param baseDir Sitemap files will be generated in this directory as either "sitemap.xml" or "sitemap1.xml" "sitemap2.xml" and so on.
 	 */
-	public GoogleNewsSitemapGenerator(URL baseUrl, File baseDir) {
+	public GoogleNewsSitemapGenerator(URL baseUrl, Path baseDir) {
 		this(new SitemapGeneratorOptions(baseUrl, baseDir));
 	}
 

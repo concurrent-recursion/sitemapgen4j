@@ -1,15 +1,14 @@
 package com.redfin.sitemapgenerator;
 
 import com.redfin.sitemapgenerator.GoogleVideoSitemapUrl.Options;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
-import java.io.File;
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.time.Instant;
-import java.time.OffsetDateTime;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.ZoneOffset;
 import java.util.List;
 
@@ -20,38 +19,19 @@ class GoogleVideoSitemapUrlTest {
 	
 	private static final URL LANDING_URL = newURL("https://www.example.com/index.html");
 	private static final URL CONTENT_URL = newURL("https://www.example.com/index.flv");
-	File dir;
-	GoogleVideoSitemapGenerator wsg;
-	
+
 	private static URL newURL(String url) {
 		try {
 			return new URL(url);
 		} catch (MalformedURLException e) {}
 		return null;
 	}
-	
-	@BeforeEach
-	public void setUp() throws Exception {
-		dir = File.createTempFile(GoogleVideoSitemapUrlTest.class.getSimpleName(), "");
-		dir.delete();
-		dir.mkdir();
-		dir.deleteOnExit();
-	}
-	
-	@AfterEach
-	public void tearDown() {
-		wsg = null;
-		for (File file : dir.listFiles()) {
-			file.deleteOnExit();
-			file.delete();
-		}
-		dir.delete();
-		dir = null;
-	}
+
+
 	
 	@Test
-	void testSimpleUrl() throws Exception {
-		wsg = new GoogleVideoSitemapGenerator("https://www.example.com", dir);
+	void testSimpleUrl(@TempDir Path tempDir) throws Exception {
+		GoogleVideoSitemapGenerator wsg = new GoogleVideoSitemapGenerator("https://www.example.com", tempDir);
 		GoogleVideoSitemapUrl url = new GoogleVideoSitemapUrl(LANDING_URL, CONTENT_URL);
 		wsg.addUrl(url);
 		String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + 
@@ -69,8 +49,8 @@ class GoogleVideoSitemapUrlTest {
 	}
 
 	@Test
-	void testOptions() throws Exception {
-		wsg = GoogleVideoSitemapGenerator.builder("https://www.example.com", dir)
+	void testOptions(@TempDir Path tempDir) throws Exception {
+		GoogleVideoSitemapGenerator wsg = GoogleVideoSitemapGenerator.builder("https://www.example.com", tempDir)
 			.dateFormat(W3CDateFormat.AUTO.withZone(ZoneOffset.UTC)).build();
 		GoogleVideoSitemapUrl url = new Options(LANDING_URL, CONTENT_URL)
 			.playerUrl(new URL("https://www.example.com/index.swf"), true)
@@ -159,10 +139,10 @@ class GoogleVideoSitemapUrlTest {
 		assertThrows(RuntimeException.class, () -> o.durationInSeconds(Integer.MAX_VALUE), ">8hr duration allowed");
 	}
 	
-	private String writeSingleSiteMap(GoogleVideoSitemapGenerator wsg) {
-		List<File> files = wsg.write();
+	private String writeSingleSiteMap(GoogleVideoSitemapGenerator wsg) throws IOException {
+		List<Path> files = wsg.write();
 		assertEquals(1, files.size(), "Too many files: " + files.toString());
-		assertEquals("sitemap.xml", files.get(0).getName(), "Sitemap misnamed");
-		return TestUtil.slurpFileAndDelete(files.get(0));
+		assertEquals("sitemap.xml", files.get(0).getFileName().toString(), "Sitemap misnamed");
+		return Files.readString(files.get(0));
 	}
 }

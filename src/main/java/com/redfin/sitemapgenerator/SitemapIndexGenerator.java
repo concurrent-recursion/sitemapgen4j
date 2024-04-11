@@ -2,14 +2,12 @@ package com.redfin.sitemapgenerator;
 
 import org.xml.sax.SAXException;
 
-import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -21,7 +19,7 @@ import java.util.List;
  */
 public class SitemapIndexGenerator {
 	private final URL baseUrl;	
-	private final File outFile;
+	private final Path outFile;
 	private final boolean allowEmptyIndex;
 	private final List<SitemapIndexUrl> urls = new ArrayList<>();
 	private final int maxUrls;
@@ -32,7 +30,7 @@ public class SitemapIndexGenerator {
 	/** Options to configure sitemap index generation */
 	public static class Options {
 		private final URL baseUrl;
-		private final File outFile;
+		private final Path outFile;
 		private W3CDateFormat dateFormat = null;
 		private boolean allowEmptyIndex = false;
 		private int maxUrls = SitemapConstants.MAX_SITEMAPS_PER_INDEX;
@@ -45,7 +43,7 @@ public class SitemapIndexGenerator {
 		 * @param baseUrl All URLs in the generated sitemap(s) should appear under this base URL
 		 * @param outFile The sitemap index will be written out at this location
 		 */
-		public Options(URL baseUrl, File outFile) {
+		public Options(URL baseUrl, Path outFile) {
 			this.baseUrl = baseUrl;
 			this.outFile = outFile;
 		}
@@ -54,7 +52,7 @@ public class SitemapIndexGenerator {
 		 * @param baseUrl All URLs in the generated sitemap(s) should appear under this base URL
 		 * @param outFile The sitemap index will be written out at this location
 		 */
-		public Options(String baseUrl, File outFile) throws MalformedURLException {
+		public Options(String baseUrl, Path outFile) throws MalformedURLException {
 			this(new URL(baseUrl), outFile);
 		}
 		/** The date formatter, typically configured with a {@link W3CDateFormat} and/or a time zone */
@@ -116,7 +114,7 @@ public class SitemapIndexGenerator {
 	 * @param baseUrl All URLs in the generated sitemap(s) should appear under this base URL
 	 * @param outFile The sitemap index will be written out at this location
 	 */
-	public SitemapIndexGenerator(URL baseUrl, File outFile) {
+	public SitemapIndexGenerator(URL baseUrl, Path outFile) {
 		this(new Options(baseUrl, outFile));
 	}
 	
@@ -125,7 +123,7 @@ public class SitemapIndexGenerator {
 	 * @param baseUrl All URLs in the generated sitemap(s) should appear under this base URL
 	 * @param outFile The sitemap index will be written out at this location
 	 */
-	public SitemapIndexGenerator(String baseUrl, File outFile) throws MalformedURLException {
+	public SitemapIndexGenerator(String baseUrl, Path outFile) throws MalformedURLException {
 		this(new Options(baseUrl, outFile));
 	}
 	
@@ -223,9 +221,9 @@ public class SitemapIndexGenerator {
 	
 	/** Writes out the sitemap index */
 	public void write() {
-		try {
+		try(OutputStreamWriter osw = new OutputStreamWriter(Files.newOutputStream(outFile))) {
 			// TODO gzip? is that legal for a sitemap index?
-			write(new FileWriter(outFile));
+			write(osw);
 		} catch (IOException e) {
 			throw new SitemapException("Problem writing sitemap index file " + outFile, e);
 		}
@@ -234,7 +232,7 @@ public class SitemapIndexGenerator {
 	private void write(OutputStreamWriter out) {
 		if (!allowEmptyIndex && urls.isEmpty()) throw new SitemapException("No URLs added, sitemap index would be empty; you must add some URLs with addUrls");
 		// Auto-close the stream after use
-		try (out) {
+		try {
 			writeSiteMap(out);
 			out.flush();
 			if (autoValidate) SitemapValidator.validateSitemapIndex(outFile);

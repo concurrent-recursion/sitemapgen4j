@@ -1,5 +1,3 @@
-Migrate to java.nio
-
 Ping search engines
 
 Text file reader

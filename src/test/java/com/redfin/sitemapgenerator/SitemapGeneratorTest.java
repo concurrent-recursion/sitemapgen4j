@@ -1,16 +1,14 @@
 package com.redfin.sitemapgenerator;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
-import java.time.Instant;
-import java.time.OffsetDateTime;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
@@ -91,31 +89,11 @@ class SitemapGeneratorTest {
 		"    <loc>https://www.example.com/19</loc>\n" + 
 		"  </url>\n" + 
 		"</urlset>";
-	File dir;
-	WebSitemapGenerator wsg;
-	
-	@BeforeEach
-	public void setUp() throws Exception {
-		dir = File.createTempFile(SitemapGeneratorTest.class.getSimpleName(), "");
-		dir.delete();
-		dir.mkdir();
-		dir.deleteOnExit();
-	}
-	
-	@AfterEach
-	public void tearDown() {
-		wsg = null;
-		for (File file : dir.listFiles()) {
-			file.deleteOnExit();
-			file.delete();
-		}
-		dir.delete();
-		dir = null;
-	}
+
 	
 	@Test
-	void testSimpleUrl() throws Exception {
-		wsg = new WebSitemapGenerator("https://www.example.com", dir);
+	void testSimpleUrl(@TempDir Path tempDir) throws Exception {
+		WebSitemapGenerator wsg = new WebSitemapGenerator("https://www.example.com", tempDir.resolve("simpleurl.xml"));
 		wsg.addUrl("https://www.example.com/index.html");
 		String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + 
 			"<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\" >\n" + 
@@ -130,8 +108,8 @@ class SitemapGeneratorTest {
 	}
 	
 	@Test
-	void testTwoUrl() throws Exception {
-		wsg = new WebSitemapGenerator("https://www.example.com", dir);
+	void testTwoUrl(@TempDir Path tempDir) throws Exception {
+		WebSitemapGenerator wsg = new WebSitemapGenerator("https://www.example.com", tempDir.resolve("sitemap.xml"));
 		wsg.addUrls("https://www.example.com/index.html", "https://www.example.com/index2.html");
 		String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + 
 			"<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\" >\n" + 
@@ -149,8 +127,8 @@ class SitemapGeneratorTest {
 	}
 	
 	@Test
-	void testAllUrlOptions() throws Exception {
-		wsg = WebSitemapGenerator.builder("https://www.example.com", dir).dateFormat(W3CDateFormat.AUTO.withZone(ZoneOffset.UTC)).autoValidate(true).build();
+	void testAllUrlOptions(@TempDir Path tempDir) throws Exception {
+		WebSitemapGenerator wsg = WebSitemapGenerator.builder("https://www.example.com", tempDir).dateFormat(W3CDateFormat.AUTO.withZone(ZoneOffset.UTC)).autoValidate(true).build();
 		WebSitemapUrl url = new WebSitemapUrl.Options("https://www.example.com/index.html")
 			.changeFreq(ChangeFreq.DAILY).lastMod(TestUtil.getEpochOffsetDateTime()).priority(1.0).build();
 		wsg.addUrl(url);
@@ -170,14 +148,14 @@ class SitemapGeneratorTest {
 	}
 	
 	@Test
-	void testBadUrl() throws Exception {
-		wsg = new WebSitemapGenerator("https://www.example.com", dir);
+	void testBadUrl(@TempDir Path tempDir) throws Exception {
+		WebSitemapGenerator wsg = new WebSitemapGenerator("https://www.example.com", tempDir);
 		assertThrows(RuntimeException.class, () -> wsg.addUrl("https://example.com/index.html"), "wrong domain allowed to be added");
 	}
 	
 	@Test
-	void testSameDomainDifferentSchemeOK() throws Exception {
-		wsg = new WebSitemapGenerator("https://www.example.com", dir);
+	void testSameDomainDifferentSchemeOK(@TempDir Path tempDir) throws Exception {
+		WebSitemapGenerator wsg = new WebSitemapGenerator("https://www.example.com", tempDir);
 			
 		wsg.addUrl("https://www.example.com/index.html");
 		
@@ -194,38 +172,41 @@ class SitemapGeneratorTest {
 	}
 	
 	@Test
-	void testDoubleWrite() throws Exception {
-		testSimpleUrl();
-		assertThrows(RuntimeException.class, () -> wsg.write(), "Double-write is not allowed");
+	void testDoubleWrite(@TempDir Path tempDir) throws Exception {
+		WebSitemapGenerator wsg = new WebSitemapGenerator("https://www.example.com", tempDir);
+		wsg.addUrl("https://www.example.com/index.html");
+		writeSingleSiteMap(wsg);
+
+		assertThrows(RuntimeException.class, wsg::write, "Double-write is not allowed");
 	}
 	
 	@Test
-	void testEmptyWrite() throws Exception {
-		wsg = new WebSitemapGenerator("https://www.example.com", dir);
-		assertThrows(RuntimeException.class, () -> 	wsg.write(), "Empty write is not allowed");
+	void testEmptyWrite(@TempDir Path tempDir) throws Exception {
+		WebSitemapGenerator wsg = new WebSitemapGenerator("https://www.example.com", tempDir);
+		assertThrows(RuntimeException.class, wsg::write, "Empty write is not allowed");
 	}
 	
 	@Test
-	void testSuffixPresent() throws MalformedURLException {
-		wsg = WebSitemapGenerator.builder("https://www.example.com", dir).suffixStringPattern("01").build();
+	void testSuffixPresent(@TempDir Path tempDir) throws MalformedURLException {
+		WebSitemapGenerator wsg = WebSitemapGenerator.builder("https://www.example.com", tempDir).suffixStringPattern("01").build();
         wsg.addUrl("https://www.example.com/url1");
         wsg.addUrl("https://www.example.com/url2");
-		List<File> files = wsg.write();
-		assertEquals("sitemap01.xml", files.get(0).getName(), "Sitemap has a suffix now");
+		List<Path> files = wsg.write();
+		assertEquals("sitemap01.xml", files.get(0).getFileName().toString(), "Sitemap has a suffix now");
 	}
 	
 	@Test
-	void testNullSuffixPassed() throws MalformedURLException {
-        wsg = WebSitemapGenerator.builder("https://www.example.com", dir).suffixStringPattern("").build();
+	void testNullSuffixPassed(@TempDir Path tempDir) throws MalformedURLException {
+        WebSitemapGenerator wsg = WebSitemapGenerator.builder("https://www.example.com", tempDir).suffixStringPattern("").build();
         wsg.addUrl("https://www.example.com/url1");
         wsg.addUrl("https://www.example.com/url2");
-        List<File> files = wsg.write();
-        assertEquals("sitemap.xml", files.get(0).getName(), "Sitemap has a suffix now");
+        List<Path> files = wsg.write();
+        assertEquals("sitemap.xml", files.get(0).getFileName().toString(), "Sitemap has a suffix now");
     }
 	
 	@Test
-	void testTooManyUrls() throws Exception {
-		wsg = WebSitemapGenerator.builder("https://www.example.com", dir).allowMultipleSitemaps(false).build();
+	void testTooManyUrls(@TempDir Path tempDir) throws Exception {
+		WebSitemapGenerator wsg = WebSitemapGenerator.builder("https://www.example.com", tempDir).allowMultipleSitemaps(false).build();
 		for (int i = 0; i < SitemapConstants.MAX_URLS_PER_SITEMAP; i++) {
 			wsg.addUrl("https://www.example.com/"+i);
 		}
@@ -233,28 +214,28 @@ class SitemapGeneratorTest {
 	}
 	
 	@Test
-	void testMaxUrlsPlusOne() throws Exception {
-		wsg = WebSitemapGenerator.builder("https://www.example.com", dir).autoValidate(true).maxUrls(10).build();
+	void testMaxUrlsPlusOne(@TempDir Path tempDir) throws Exception {
+		WebSitemapGenerator wsg = WebSitemapGenerator.builder("https://www.example.com", tempDir).autoValidate(true).maxUrls(10).build();
 		for (int i = 0; i < 9; i++) {
 			wsg.addUrl("https://www.example.com/"+i);
 		}
 		wsg.addUrl("https://www.example.com/9");
 		wsg.addUrl("https://www.example.com/just-one-more");
-		String actual = TestUtil.slurpFileAndDelete(new File(dir, "sitemap1.xml"));
+		String actual = Files.readString(tempDir.resolve( "sitemap1.xml"));
 		assertEquals(SITEMAP1, actual, "sitemap1 didn't match");
-		List<File> files = wsg.write();
+		List<Path> files = wsg.write();
 		assertEquals(2, files.size());
-		assertEquals("sitemap1.xml", files.get(0).getName(), "First sitemap was misnamed");
-		assertEquals("sitemap2.xml", files.get(1).getName(), "Second sitemap was misnamed");
-		actual = TestUtil.slurpFileAndDelete(files.get(1));
+		assertEquals("sitemap1.xml", files.get(0).getFileName().toString(), "First sitemap was misnamed");
+		assertEquals("sitemap2.xml", files.get(1).getFileName().toString(), "Second sitemap was misnamed");
+		actual = Files.readString(files.get(1));
 		assertEquals(SITEMAP_PLUS_ONE, actual, "sitemap2 didn't match");
 		
 		TestUtil.isValidSitemap(actual);
 	}
 	
 	@Test
-	void testMaxUrls() throws Exception {
-		wsg = WebSitemapGenerator.builder("https://www.example.com", dir).autoValidate(true).maxUrls(10).build();
+	void testMaxUrls(@TempDir Path tempDir) throws Exception {
+		WebSitemapGenerator wsg = WebSitemapGenerator.builder("https://www.example.com", tempDir).autoValidate(true).maxUrls(10).build();
 		for (int i = 0; i < 9; i++) {
 			wsg.addUrl("https://www.example.com/"+i);
 		}
@@ -266,79 +247,78 @@ class SitemapGeneratorTest {
 	}
 	
 	@Test
-	void testMaxUrlsTimesTwo() throws Exception {
-		wsg = WebSitemapGenerator.builder("https://www.example.com", dir).autoValidate(true).maxUrls(10).build();
+	void testMaxUrlsTimesTwo(@TempDir Path tempDir) throws Exception {
+		WebSitemapGenerator wsg = WebSitemapGenerator.builder("https://www.example.com", tempDir).autoValidate(true).maxUrls(10).build();
 		for (int i = 0; i < 19; i++) {
 			wsg.addUrl("https://www.example.com/"+i);
 		}
 		wsg.addUrl("https://www.example.com/19");
-		List<File> files = wsg.write();
+		List<Path> files = wsg.write();
 		
 		assertEquals(2, files.size());
-		assertEquals("sitemap1.xml", files.get(0).getName(), "First sitemap was misnamed");
-		assertEquals("sitemap2.xml", files.get(1).getName(), "Second sitemap was misnamed");
+		assertEquals("sitemap1.xml", files.get(0).getFileName().toString(), "First sitemap was misnamed");
+		assertEquals("sitemap2.xml", files.get(1).getFileName().toString(), "Second sitemap was misnamed");
 		
-		String actual = TestUtil.slurpFileAndDelete(files.get(0));
+		String actual = Files.readString(files.get(0));
 		assertEquals(SITEMAP1, actual, "sitemap1 didn't match");
 		
 		TestUtil.isValidSitemap(actual);
 		
-		actual = TestUtil.slurpFileAndDelete(files.get(1));
+		actual = Files.readString(files.get(1));
 		assertEquals(SITEMAP2, actual, "sitemap2 didn't match");
 		
 		TestUtil.isValidSitemap(actual);
 	}
 	
 	@Test
-	void testMaxUrlsTimesTwoPlusOne() throws Exception {
-		wsg = WebSitemapGenerator.builder("https://www.example.com", dir).autoValidate(true).maxUrls(10).build();
+	void testMaxUrlsTimesTwoPlusOne(@TempDir Path tempDir) throws Exception {
+		WebSitemapGenerator wsg = WebSitemapGenerator.builder("https://www.example.com", tempDir).autoValidate(true).maxUrls(10).build();
 		for (int i = 0; i < 19; i++) {
 			wsg.addUrl("https://www.example.com/"+i);
 		}
 		wsg.addUrl("https://www.example.com/19");
 		wsg.addUrl("https://www.example.com/just-one-more");
-		List<File> files = wsg.write();
+		List<Path> files = wsg.write();
 		
 		assertEquals(3, files.size());
-		assertEquals("sitemap1.xml", files.get(0).getName(), "First sitemap was misnamed");
-		assertEquals("sitemap2.xml", files.get(1).getName(), "Second sitemap was misnamed");
-		assertEquals("sitemap3.xml", files.get(2).getName(), "Third sitemap was misnamed");
+		assertEquals("sitemap1.xml", files.get(0).getFileName().toString(), "First sitemap was misnamed");
+		assertEquals("sitemap2.xml", files.get(1).getFileName().toString(), "Second sitemap was misnamed");
+		assertEquals("sitemap3.xml", files.get(2).getFileName().toString(), "Third sitemap was misnamed");
 		
 		String expected = SITEMAP1;
-		String actual = TestUtil.slurpFileAndDelete(files.get(0));
+		String actual = Files.readString(files.get(0));
 		assertEquals(expected, actual, "sitemap1 didn't match");
 		
 		TestUtil.isValidSitemap(actual);
 		
 		expected = SITEMAP2;
-		actual = TestUtil.slurpFileAndDelete(files.get(1));
+		actual = Files.readString(files.get(1));
 		assertEquals(expected, actual, "sitemap2 didn't match");
 		
 		TestUtil.isValidSitemap(actual);
 		
 		expected = SITEMAP_PLUS_ONE;
-		actual = TestUtil.slurpFileAndDelete(files.get(2));
+		actual = Files.readString(files.get(2));
 		assertEquals(expected, actual, "sitemap3 didn't match");
 		
 		TestUtil.isValidSitemap(actual);
 	}
 	
 	@Test
-	void testGzip() throws Exception {
-		wsg = WebSitemapGenerator.builder("https://www.example.com", dir)
+	void testGzip(@TempDir Path tempDir) throws Exception {
+		WebSitemapGenerator wsg = WebSitemapGenerator.builder("https://www.example.com", tempDir)
 			.gzip(true).build();
 		for (int i = 0; i < 9; i++) {
 			wsg.addUrl("https://www.example.com/"+i);
 		}
 		wsg.addUrl("https://www.example.com/9");
-		List<File> files = wsg.write();
+		List<Path> files = wsg.write();
 		assertEquals(1, files.size(), "Too many files: " + files.toString());
-		assertEquals("sitemap.xml.gz", files.get(0).getName(), "Sitemap misnamed");
-		File file = files.get(0);
-		file.deleteOnExit();
+		assertEquals("sitemap.xml.gz", files.get(0).getFileName().toString(), "Sitemap misnamed");
+		Path file = files.get(0);
 		StringBuilder sb = new StringBuilder();
 		try {
-			FileInputStream fileStream = new FileInputStream(file);
+			InputStream fileStream = Files.newInputStream(file);
 			GZIPInputStream gzipStream = new GZIPInputStream(fileStream);
 			InputStreamReader reader = new InputStreamReader(gzipStream);
 			int c;
@@ -349,7 +329,7 @@ class SitemapGeneratorTest {
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
-		file.delete();
+		Files.delete(file);
 		String actual = sb.toString();
 		assertEquals(SITEMAP1, actual, "sitemap didn't match");
 		TestUtil.isValidSitemap(actual);
@@ -357,7 +337,7 @@ class SitemapGeneratorTest {
 	
 	@Test
 	void testBaseDirIsNullThrowsNullPointerException() throws Exception {
-		wsg = WebSitemapGenerator.builder("https://www.example.com", null).autoValidate(true).maxUrls(10).build();
+		WebSitemapGenerator wsg = WebSitemapGenerator.builder("https://www.example.com", null).autoValidate(true).maxUrls(10).build();
 		wsg.addUrl("https://www.example.com/index.html");
 		Exception e = null;
 		try {
@@ -371,7 +351,7 @@ class SitemapGeneratorTest {
 	
 	@Test
 	void testWriteAsStringsMoreThanOneString() throws Exception {
-		wsg = WebSitemapGenerator.builder("https://www.example.com", null).autoValidate(true).maxUrls(10).build();
+		WebSitemapGenerator wsg = WebSitemapGenerator.builder("https://www.example.com", null).autoValidate(true).maxUrls(10).build();
 		for (int i = 0; i < 9; i++) {
 			wsg.addUrl("https://www.example.com/"+i);
 		}
@@ -383,8 +363,8 @@ class SitemapGeneratorTest {
 	}
 	
 	@Test
-	void testWriteEmptySitemap() throws Exception {
-		wsg = WebSitemapGenerator.builder("https://www.example.com", dir).allowEmptySitemap(true).build();
+	void testWriteEmptySitemap(@TempDir Path tempDir) throws Exception {
+		WebSitemapGenerator wsg = WebSitemapGenerator.builder("https://www.example.com", tempDir).allowEmptySitemap(true).build();
 		String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
 				String.format("<urlset xmlns=\"%s\" >\n", SitemapConstants.SITEMAP_NS_URI) +
 				"</urlset>";
@@ -393,8 +373,8 @@ class SitemapGeneratorTest {
 	}
 	
 	@Test
-	void testMaxUrlsAllowingEmptyDoesNotWriteExtraSitemap() throws Exception {
-		wsg = WebSitemapGenerator.builder("https://www.example.com", dir).allowEmptySitemap(true).maxUrls(10).build();
+	void testMaxUrlsAllowingEmptyDoesNotWriteExtraSitemap(@TempDir Path tempDir) throws Exception {
+		WebSitemapGenerator wsg = WebSitemapGenerator.builder("https://www.example.com", tempDir).allowEmptySitemap(true).maxUrls(10).build();
 		for (int i = 0; i < 10; i++) {
 			wsg.addUrl("https://www.example.com/"+i);
 		}
@@ -402,10 +382,10 @@ class SitemapGeneratorTest {
 		assertEquals(SITEMAP1, sitemap);
 	}
 	
-	private String writeSingleSiteMap(WebSitemapGenerator wsg) {
-		List<File> files = wsg.write();
+	private String writeSingleSiteMap(WebSitemapGenerator wsg) throws IOException {
+		List<Path> files = wsg.write();
 		assertEquals(1, files.size(), "Too many files: " + files);
-		assertEquals("sitemap.xml", files.get(0).getName(), "Sitemap misnamed");
-		return TestUtil.slurpFileAndDelete(files.get(0));
+		assertEquals("sitemap.xml", files.get(0).getFileName().toString(), "Sitemap misnamed");
+		return Files.readString(files.get(0));
 	}
 }

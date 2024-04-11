@@ -1,13 +1,12 @@
 package com.redfin.sitemapgenerator;
 
-import java.io.File;
 import java.net.URL;
-import java.time.format.DateTimeFormatter;
+import java.nio.file.Path;
 
 // that weird thing with generics is so sub-classed objects will return themselves
 // It makes sense, I swear! https://madbean.com/2004/mb2004-3/
 abstract class AbstractSitemapGeneratorOptions<T extends AbstractSitemapGeneratorOptions<T>> {
-	File baseDir;
+	Path baseDir;
 	URL baseUrl;
 	String fileNamePrefix = "sitemap";
 	boolean allowEmptySitemap = false;
@@ -18,7 +17,7 @@ abstract class AbstractSitemapGeneratorOptions<T extends AbstractSitemapGenerato
 	boolean autoValidate = false;
 	boolean gzip = false;
 	
-	AbstractSitemapGeneratorOptions(URL baseUrl, File baseDir) {
+	AbstractSitemapGeneratorOptions(URL baseUrl, Path baseDir) {
 		if (baseUrl == null) throw new NullPointerException("baseUrl may not be null");
 		this.baseDir = baseDir;
 		this.baseUrl = baseUrl;

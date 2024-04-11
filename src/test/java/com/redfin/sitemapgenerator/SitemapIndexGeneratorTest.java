@@ -1,17 +1,17 @@
 package com.redfin.sitemapgenerator;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
-import java.io.File;
-import java.net.MalformedURLException;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.ZoneOffset;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class SitemapIndexGeneratorTest {
+class SitemapIndexGeneratorTest {
 
 	private static final W3CDateFormat ZULU = new W3CDateFormat().withZone(ZoneOffset.UTC);
 
@@ -60,25 +60,10 @@ public class SitemapIndexGeneratorTest {
 			"</sitemapindex>";
 	
 	private static final String EXAMPLE = "https://www.example.com/";
-	File outFile;
-	SitemapIndexGenerator sig;
-	
-	@BeforeEach
-	public void setUp() throws Exception {
-		outFile = File.createTempFile(SitemapGeneratorTest.class.getSimpleName(), ".xml");
-		outFile.deleteOnExit();
-	}
-	
-	@AfterEach
-	public void tearDown() {
-		sig = null;
-		outFile.delete();
-		outFile = null;
-	}
 
 	@Test
-	void testTooManyUrls() throws Exception {
-		sig = new SitemapIndexGenerator.Options(EXAMPLE, outFile).maxUrls(10).autoValidate(true).build();
+	void testTooManyUrls(@TempDir Path tempDir) throws Exception {
+		SitemapIndexGenerator sig = new SitemapIndexGenerator.Options(EXAMPLE, tempDir).maxUrls(10).autoValidate(true).build();
 		for (int i = 0; i < 9; i++) {
 			sig.addUrl(EXAMPLE+i);
 		}
@@ -86,44 +71,47 @@ public class SitemapIndexGeneratorTest {
 		assertThrows(RuntimeException.class, () -> sig.addUrl("https://www.example.com/just-one-more"), "too many URLs allowed");
 	}
 	@Test
-	void testNoUrls() throws Exception {
-		sig = new SitemapIndexGenerator(EXAMPLE, outFile);
-		assertThrows(RuntimeException.class, () -> sig.write(), "Allowed write with no URLs");
+	void testNoUrls(@TempDir Path tempDir) throws Exception {
+		SitemapIndexGenerator sig = new SitemapIndexGenerator(EXAMPLE, tempDir);
+		assertThrows(RuntimeException.class, sig::write, "Allowed write with no URLs");
 	}
 	
 	@Test
-	void testNoUrlsEmptyIndexAllowed() throws Exception {
-		sig = new SitemapIndexGenerator.Options(EXAMPLE, outFile).allowEmptyIndex(true).build();
+	void testNoUrlsEmptyIndexAllowed(@TempDir Path tempDir) throws Exception {
+		final Path sitemap = tempDir.resolve("sitemap.xml");
+		SitemapIndexGenerator sig = new SitemapIndexGenerator.Options(EXAMPLE, sitemap).allowEmptyIndex(true).build();
 		sig.write();
 		String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
 				String.format("<sitemapindex xmlns=\"%s\">\n", SitemapConstants.SITEMAP_NS_URI) +
 				"</sitemapindex>";
-		String actual = TestUtil.slurpFileAndDelete(outFile);
+		String actual = Files.readString(sitemap);
 		assertEquals(expected, actual);
 		assertEquals(expected, sig.writeAsString());
 	}
 	
 	@Test
-	void testMaxUrls() throws Exception {
-		sig = new SitemapIndexGenerator.Options(EXAMPLE, outFile).autoValidate(true)
+	void testMaxUrls(@TempDir Path tempDir) throws Exception {
+		final Path sitemap = tempDir.resolve("sitemap.xml");
+		SitemapIndexGenerator sig = new SitemapIndexGenerator.Options(EXAMPLE, sitemap).autoValidate(true)
 			.maxUrls(10).defaultLastMod(TestUtil.getEpochOffsetDateTime()).dateFormat(ZULU).build();
 		for (int i = 1; i <= 9; i++) {
 			sig.addUrl(EXAMPLE+"sitemap"+i+".xml");
 		}
 		sig.addUrl(EXAMPLE+"sitemap10.xml");
 		sig.write();
-		String actual = TestUtil.slurpFileAndDelete(outFile);
+		String actual = Files.readString(sitemap);
 		assertEquals(INDEX, actual);
 		assertEquals(INDEX, sig.writeAsString());
 	}
 	
 	@Test
-	void testOneUrl() throws Exception {
-		sig = new SitemapIndexGenerator.Options(EXAMPLE, outFile).dateFormat(ZULU).autoValidate(true).build();
+	void testOneUrl(@TempDir Path tempDir) throws Exception {
+		final Path sitemap = tempDir.resolve("sitemap.xml");
+		SitemapIndexGenerator sig = new SitemapIndexGenerator.Options(EXAMPLE, sitemap).dateFormat(ZULU).autoValidate(true).build();
 		SitemapIndexUrl url = new SitemapIndexUrl(EXAMPLE+"index.html", TestUtil.getEpochOffsetDateTime());
 		sig.addUrl(url);
 		sig.write();
-		String actual = TestUtil.slurpFileAndDelete(outFile);
+		String actual = Files.readString(sitemap);
 		String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + 
 				String.format("<sitemapindex xmlns=\"%s\">\n", SitemapConstants.SITEMAP_NS_URI) +
 				"  <sitemap>\n" + 
@@ -136,12 +124,13 @@ public class SitemapIndexGeneratorTest {
 	}
 	
 	@Test
-	void testAddByPrefix() throws MalformedURLException {
-		sig = new SitemapIndexGenerator.Options(EXAMPLE, outFile).autoValidate(true)
+	void testAddByPrefix(@TempDir Path tempDir) throws IOException {
+		final Path sitemap = tempDir.resolve("sitemap.xml");
+		SitemapIndexGenerator sig = new SitemapIndexGenerator.Options(EXAMPLE, sitemap).autoValidate(true)
 			.defaultLastMod(TestUtil.getEpochOffsetDateTime()).dateFormat(ZULU).build();
 		sig.addUrls("sitemap", ".xml", 10);
 		sig.write();
-		String actual = TestUtil.slurpFileAndDelete(outFile);
+		String actual = Files.readString(sitemap);
 		assertEquals(INDEX, actual);
 		assertEquals(INDEX, sig.writeAsString());
 	}

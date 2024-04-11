@@ -1,46 +1,25 @@
 package com.redfin.sitemapgenerator;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.time.OffsetDateTime;
 import java.util.TimeZone;
 
-public class TutorialExampleTest {
+class TutorialExampleTest {
 	
-	File myDir;
-	File myFile;
-	
-	@BeforeEach
-	public void setUp() throws Exception {
-		myDir = File.createTempFile(TutorialExampleTest.class.getSimpleName(), "");
-		myDir.delete();
-		myDir.mkdir();
-		myDir.deleteOnExit();
-		myFile = new File(myDir, "sitemap_index.xml");
-	}
-	
-	@AfterEach
-	public void tearDown() {
-		for (File file : myDir.listFiles()) {
-			file.deleteOnExit();
-			file.delete();
-		}
-		myDir.delete();
-		myDir = null;
-	}
+
 	
 	@Test
-	void testGettingStarted() throws Exception {
+	void testGettingStarted(@TempDir Path myDir) throws Exception {
 		WebSitemapGenerator wsg = new WebSitemapGenerator("https://www.example.com", myDir);
 		wsg.addUrl("https://www.example.com/index.html"); // repeat multiple times
 		wsg.write();
 	}
 	
 	@Test
-	void testConfiguringWsgOptions() throws Exception {
+	void testConfiguringWsgOptions(@TempDir Path myDir) throws Exception {
 		WebSitemapGenerator wsg = WebSitemapGenerator.builder("https://www.example.com", myDir)
 			.gzip(true).build(); // enable gzipped output
 		wsg.addUrl("https://www.example.com/index.html");
@@ -48,7 +27,7 @@ public class TutorialExampleTest {
 	}
 	
 	@Test
-	void testConfiguringUrlOptions() throws Exception {
+	void testConfiguringUrlOptions(@TempDir Path myDir) throws Exception {
 		WebSitemapGenerator wsg = new WebSitemapGenerator("https://www.example.com", myDir);
 		WebSitemapUrl url = new WebSitemapUrl.Options("https://www.example.com/index.html")
 			.lastMod(OffsetDateTime.now()).priority(1.0).changeFreq(ChangeFreq.HOURLY).build();
@@ -58,7 +37,7 @@ public class TutorialExampleTest {
 	}
 	
 	@Test
-	void testConfiguringDateFormat() throws Exception {
+	void testConfiguringDateFormat(@TempDir Path myDir) throws Exception {
 		WebSitemapGenerator wsg = WebSitemapGenerator.builder("https://www.example.com", myDir)
 			.dateFormat(W3CDateFormat.DAY.withZone(TimeZone.getTimeZone("GMT").toZoneId())).build(); // actually use the configured dateFormat
 		wsg.addUrl("https://www.example.com/index.html");
@@ -66,7 +45,7 @@ public class TutorialExampleTest {
 	}
 	
 	@Test
-	void testLotsOfUrlsWsg() throws Exception {
+	void testLotsOfUrlsWsg(@TempDir Path myDir) throws Exception {
 		WebSitemapGenerator wsg = new WebSitemapGenerator("https://www.example.com", myDir);
 		for (int i = 0; i < 60000; i++) wsg.addUrl("https://www.example.com/index.html");
 		wsg.write();
@@ -74,7 +53,7 @@ public class TutorialExampleTest {
 	}
 	
 	@Test
-	void testLotsOfUrlsSig() throws Exception {
+	void testLotsOfUrlsSig(@TempDir Path myDir) throws Exception {
 		WebSitemapGenerator wsg;
 		// generate foo sitemap
 		wsg = WebSitemapGenerator.builder("https://www.example.com", myDir).fileNamePrefix("foo").build();
@@ -84,7 +63,8 @@ public class TutorialExampleTest {
 		wsg = WebSitemapGenerator.builder("https://www.example.com", myDir).fileNamePrefix("bar").build();
 		for (int i = 0; i < 5; i++) wsg.addUrl("https://www.example.com/bar"+i+".html");
 		wsg.write();
-		// generate sitemap index for foo + bar 
+		// generate sitemap index for foo + bar
+		Path myFile = myDir.resolve( "sitemap_index.xml");
 		SitemapIndexGenerator sig = new SitemapIndexGenerator("https://www.example.com", myFile);
 		sig.addUrl("https://www.example.com/foo.html");
 		sig.addUrl("https://www.example.com/bar.html");
@@ -92,7 +72,7 @@ public class TutorialExampleTest {
 	}
 	
 	@Test
-	void testAutoValidate() throws Exception {
+	void testAutoValidate(@TempDir Path myDir) throws Exception {
 		WebSitemapGenerator wsg = WebSitemapGenerator.builder("https://www.example.com", myDir)
 			.autoValidate(true).build(); // validate the sitemap after writing
 		wsg.addUrl("https://www.example.com/index.html");

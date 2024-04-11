@@ -2,19 +2,20 @@ package com.redfin.sitemapgenerator;
 
 import org.xml.sax.SAXException;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.GZIPOutputStream;
 
 abstract class SitemapGenerator<U extends ISitemapUrl, T extends SitemapGenerator<U,T>> {
 	private final URL baseUrl;
-	private final File baseDir;
+	private final Path baseDir;
 	private final String fileNamePrefix;
 	private final String fileNameSuffix;
 	private final boolean allowEmptySitemap;
@@ -28,7 +29,7 @@ abstract class SitemapGenerator<U extends ISitemapUrl, T extends SitemapGenerato
 	private int mapCount = 0;
 	private boolean finished = false;
 	
-	private final List<File> outFiles = new ArrayList<>();
+	private final List<Path> outFiles = new ArrayList<>();
 	
 	public SitemapGenerator(AbstractSitemapGeneratorOptions<?> options, ISitemapUrlRenderer<U> renderer) {
 		baseDir = options.baseDir;
@@ -159,7 +160,7 @@ abstract class SitemapGenerator<U extends ISitemapUrl, T extends SitemapGenerato
 	 *
 	 * @return a list of files we wrote out to disk
 	 */
-	public List<File> write() {
+	public List<Path> write() {
 		if (finished) throw new SitemapException("Sitemap already printed; you must create a new generator to make more sitemaps");
 		if (!allowEmptySitemap && urls.isEmpty() && mapCount == 0) throw new SitemapException("No URLs added, sitemap would be empty; you must add some URLs with addUrls");
 		writeSiteMap();
@@ -206,8 +207,8 @@ abstract class SitemapGenerator<U extends ISitemapUrl, T extends SitemapGenerato
 	 * After you've called {@link #write()}, call this to generate a sitemap index of all sitemaps you generated.
 	 * The sitemap index is written to {baseDir}/sitemap_index.xml
 	 */
-	public File writeSitemapsWithIndex() {
-		return writeSitemapsWithIndex(new File(baseDir, SitemapConstants.SITEMAP_INDEX_FILE));
+	public Path writeSitemapsWithIndex() {
+		return writeSitemapsWithIndex(baseDir.resolve(SitemapConstants.SITEMAP_INDEX_FILE));
 	}
 
 	/**
@@ -222,12 +223,12 @@ abstract class SitemapGenerator<U extends ISitemapUrl, T extends SitemapGenerato
 	 *
 	 * @param outFile the destination file of the sitemap index.
 	 */
-	public File writeSitemapsWithIndex(File outFile) {
+	public Path writeSitemapsWithIndex(Path outFile) {
 		prepareSitemapIndexGenerator(outFile).write();
 		return outFile;
 	}
 
-	private SitemapIndexGenerator prepareSitemapIndexGenerator(File outFile) {
+	private SitemapIndexGenerator prepareSitemapIndexGenerator(Path outFile) {
 		if (!finished) throw new SitemapException("Sitemaps not generated yet; call write() first");
 		SitemapIndexGenerator sig;
 		sig = new SitemapIndexGenerator.Options(baseUrl, outFile).dateFormat(dateFormat).autoValidate(autoValidate).build();
@@ -246,11 +247,24 @@ abstract class SitemapGenerator<U extends ISitemapUrl, T extends SitemapGenerato
 		} else {
 			fileNamePrefix = this.fileNamePrefix;
 		}
-		File outFile = new File(baseDir, fileNamePrefix+fileNameSuffix);
+		if(Files.notExists(baseDir)){
+            try {
+                Files.createDirectories(baseDir);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+		Path outFile = baseDir.resolve(fileNamePrefix+fileNameSuffix);
 		outFiles.add(outFile);
-		
-		try (FileOutputStream fileStream = new FileOutputStream(outFile);
-			OutputStreamWriter out =
+		if(!Files.exists(outFile)){
+			try {
+				Files.createFile(outFile);
+			}catch (IOException e){
+				throw new RuntimeException(e);
+			}
+		}
+		try (OutputStream fileStream  = Files.newOutputStream(outFile);
+			 OutputStreamWriter out =
 				gzip ? new OutputStreamWriter(new GZIPOutputStream(fileStream), StandardCharsets.UTF_8.newEncoder())
 					 : new OutputStreamWriter(fileStream, StandardCharsets.UTF_8.newEncoder())) {
 			writeSiteMap(out);

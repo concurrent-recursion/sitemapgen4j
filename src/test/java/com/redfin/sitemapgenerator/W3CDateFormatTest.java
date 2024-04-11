@@ -12,7 +12,7 @@ import java.util.TimeZone;
 import static com.redfin.sitemapgenerator.W3CDateFormat.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class W3CDateFormatTest {
+class W3CDateFormatTest {
 	@Test
 	void testFormatEpoch() {
 		OffsetDateTime epoch = TestUtil.getEpochOffsetDateTime();

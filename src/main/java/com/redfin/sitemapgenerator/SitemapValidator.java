@@ -9,10 +9,10 @@ import javax.xml.transform.stream.StreamSource;
 import javax.xml.validation.Schema;
 import javax.xml.validation.SchemaFactory;
 import javax.xml.validation.Validator;
-import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 /** Validates sitemaps and sitemap indexes
  * 
@@ -61,21 +61,21 @@ public class SitemapValidator {
 	}
 	
 	/** Validates an ordinary web sitemap file (NOT a Google-specific sitemap) */
-	public static void validateWebSitemap(File sitemap) throws SAXException {
+	public static void validateWebSitemap(Path sitemap) throws SAXException {
 		lazyLoad();
 		validateXml(sitemap, sitemapSchema);
 	}
 	
 	/** Validates a sitemap index file  */
-	public static void validateSitemapIndex(File sitemap) throws SAXException {
+	public static void validateSitemapIndex(Path sitemap) throws SAXException {
 		lazyLoad();
 		validateXml(sitemap, sitemapIndexSchema);
 	}
 
-	private static void validateXml(File sitemap, Schema schema) throws SAXException {
+	private static void validateXml(Path sitemap, Schema schema) throws SAXException {
 		Validator validator = schema.newValidator();
-		try (FileReader reader = new FileReader(sitemap)) {
-			SAXSource source = new SAXSource(new InputSource(reader));
+		try (InputStream is = Files.newInputStream(sitemap)) {
+			SAXSource source = new SAXSource(new InputSource(is));
 			validator.validate(source);
 		} catch (IOException e) {
 			throw new SitemapException(e);

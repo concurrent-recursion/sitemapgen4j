@@ -1,13 +1,11 @@
 package com.redfin.sitemapgenerator;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
-import java.io.File;
-import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.ZoneOffset;
 import java.util.List;
 
@@ -15,31 +13,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class GoogleNewsSitemapUrlTest {
 	
-	File dir;
-	GoogleNewsSitemapGenerator wsg;
-	
-	@BeforeEach
-	public void setUp() throws Exception {
-		dir = File.createTempFile(GoogleNewsSitemapUrlTest.class.getSimpleName(), "");
-		dir.delete();
-		dir.mkdir();
-		dir.deleteOnExit();
-	}
-	
-	@AfterEach
-	public void tearDown() {
-		wsg = null;
-		for (File file : dir.listFiles()) {
-			file.deleteOnExit();
-			file.delete();
-		}
-		dir.delete();
-		dir = null;
-	}
+
 	
 	@Test
-	void testSimpleUrl() throws Exception {
-		wsg = GoogleNewsSitemapGenerator.builder("https://www.example.com", dir)
+	void testSimpleUrl(@TempDir Path tempDir) throws Exception {
+		GoogleNewsSitemapGenerator wsg = GoogleNewsSitemapGenerator.builder("https://www.example.com", tempDir)
 			.dateFormat(W3CDateFormat.SECOND.withZone(ZoneOffset.UTC)).build();
 		GoogleNewsSitemapUrl url = new GoogleNewsSitemapUrl("https://www.example.com/index.html", TestUtil.getEpochOffsetDateTime(), "Example Title", "The Example Times", "en");
 		wsg.addUrl(url);
@@ -63,8 +41,8 @@ class GoogleNewsSitemapUrlTest {
 	}
 	
 	@Test
-	void testKeywords() throws Exception {
-		wsg = GoogleNewsSitemapGenerator.builder("https://www.example.com", dir)
+	void testKeywords(@TempDir Path tempDir) throws Exception {
+		GoogleNewsSitemapGenerator wsg = GoogleNewsSitemapGenerator.builder("https://www.example.com", tempDir)
 			.dateFormat(W3CDateFormat.SECOND.withZone(ZoneOffset.UTC)).build();
 		GoogleNewsSitemapUrl url = new GoogleNewsSitemapUrl.Options("https://www.example.com/index.html", TestUtil.getEpochOffsetDateTime(), "Example Title", "The Example Times", "en")
 			.keywords("Klaatu", "Barrata", "Nicto")
@@ -91,8 +69,8 @@ class GoogleNewsSitemapUrlTest {
 	}
 
 	@Test
-	void testGenres() throws Exception {
-		wsg = GoogleNewsSitemapGenerator.builder("https://www.example.com", dir)
+	void testGenres(@TempDir Path tempDir) throws Exception {
+		GoogleNewsSitemapGenerator wsg = GoogleNewsSitemapGenerator.builder("https://www.example.com", tempDir)
 			.dateFormat(W3CDateFormat.SECOND.withZone(ZoneOffset.UTC)).build();
 		GoogleNewsSitemapUrl url = new GoogleNewsSitemapUrl.Options("https://www.example.com/index.html", TestUtil.getEpochOffsetDateTime(), "Example Title", "The Example Times", "en")
 			.genres("persbericht")
@@ -118,10 +96,10 @@ class GoogleNewsSitemapUrlTest {
 		assertEquals(expected, sitemap);
 	}
 	
-	private String writeSingleSiteMap(GoogleNewsSitemapGenerator wsg) {
-		List<File> files = wsg.write();
+	private String writeSingleSiteMap(GoogleNewsSitemapGenerator wsg) throws IOException {
+		List<Path> files = wsg.write();
 		assertEquals(1, files.size(), "Too many files: " + files.toString());
-		assertEquals("sitemap.xml", files.get(0).getName(), "Sitemap misnamed");
-		return TestUtil.slurpFileAndDelete(files.get(0));
+		assertEquals("sitemap.xml", files.get(0).getFileName().toString(), "Sitemap misnamed");
+		return Files.readString(files.get(0));
 	}
 }

@@ -1,12 +1,13 @@
 package com.redfin.sitemapgenerator;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
-import java.io.File;
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,8 +17,6 @@ class GoogleImageSitemapUrlTest {
 
     private static final URL LANDING_URL = newURL("https://www.example.com/index.html");
     private static final URL CONTENT_URL = newURL("https://www.example.com/index.flv");
-    File dir;
-    GoogleImageSitemapGenerator wsg;
 
     private static URL newURL(String url) {
         try {
@@ -25,29 +24,11 @@ class GoogleImageSitemapUrlTest {
         } catch (MalformedURLException e) {}
         return null;
     }
-    
-    @BeforeEach
-    public void setUp() throws Exception {
-        dir = File.createTempFile(GoogleVideoSitemapUrlTest.class.getSimpleName(), "");
-        dir.delete();
-        dir.mkdir();
-        dir.deleteOnExit();
-    }
 
-    @AfterEach
-    public void tearDown() {
-        wsg = null;
-        for (File file : dir.listFiles()) {
-            file.deleteOnExit();
-            file.delete();
-        }
-        dir.delete();
-        dir = null;
-    }
 
     @Test
-    void testSimpleUrl() throws Exception {
-        wsg = new GoogleImageSitemapGenerator("https://www.example.com", dir);
+    void testSimpleUrl(@TempDir Path tempDir) throws Exception {
+        GoogleImageSitemapGenerator wsg = new GoogleImageSitemapGenerator("https://www.example.com", tempDir);
         GoogleImageSitemapUrl url = new GoogleImageSitemapUrl(LANDING_URL);
         url.addImage(new Image("https://cdn.example.com/image1.jpg"));
         url.addImage(new Image("https://cdn.example.com/image2.jpg"));
@@ -71,8 +52,8 @@ class GoogleImageSitemapUrlTest {
     }
 
     @Test
-    void testBaseOptions() throws Exception {
-        wsg = new GoogleImageSitemapGenerator("https://www.example.com", dir);
+    void testBaseOptions(@TempDir Path tempDir) throws Exception {
+        GoogleImageSitemapGenerator wsg = new GoogleImageSitemapGenerator("https://www.example.com", tempDir);
         GoogleImageSitemapUrl url = new GoogleImageSitemapUrl.Options(LANDING_URL)
                 .images(new Image("https://cdn.example.com/image1.jpg"), new Image("https://cdn.example.com/image2.jpg"))
                 .priority(0.5)
@@ -101,8 +82,8 @@ class GoogleImageSitemapUrlTest {
     }
 
     @Test
-    void testImageOptions() throws Exception {
-        wsg = new GoogleImageSitemapGenerator("https://www.example.com", dir);
+    void testImageOptions(@TempDir Path tempDir) throws Exception {
+        GoogleImageSitemapGenerator wsg = new GoogleImageSitemapGenerator("https://www.example.com", tempDir);
         GoogleImageSitemapUrl url = new GoogleImageSitemapUrl.Options(LANDING_URL)
                 .images(new Image.ImageBuilder("https://cdn.example.com/image1.jpg")
                         .title("image1.jpg")
@@ -150,8 +131,8 @@ class GoogleImageSitemapUrlTest {
     }
 
     @Test
-    void testTooManyImages() throws Exception {
-        wsg = new GoogleImageSitemapGenerator("https://www.example.com", dir);
+    void testTooManyImages(@TempDir Path tempDir) throws Exception {
+        GoogleImageSitemapGenerator wsg = new GoogleImageSitemapGenerator("https://www.example.com", tempDir);
         List<Image> images = new ArrayList<Image>();
         for(int i = 0; i <= 1000; i++) {
             images.add(new Image("https://cdn.example.com/image" + i + ".jpg"));
@@ -168,11 +149,11 @@ class GoogleImageSitemapUrlTest {
 
 
 
-    private String writeSingleSiteMap(GoogleImageSitemapGenerator wsg) {
-        List<File> files = wsg.write();
+    private String writeSingleSiteMap(GoogleImageSitemapGenerator wsg) throws IOException {
+        List<Path> files = wsg.write();
         assertEquals( 1, files.size(), "Too many files: " + files.toString());
-        assertEquals("sitemap.xml", files.get(0).getName(), "Sitemap misnamed");
-        return TestUtil.slurpFileAndDelete(files.get(0));
+        assertEquals("sitemap.xml", files.get(0).getFileName().toString(), "Sitemap misnamed");
+        return Files.readString(files.get(0));
     }
 
 }

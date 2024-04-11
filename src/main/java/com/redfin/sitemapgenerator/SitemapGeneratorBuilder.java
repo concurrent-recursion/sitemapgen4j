@@ -1,8 +1,8 @@
 package com.redfin.sitemapgenerator;
 
-import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.file.Path;
 
 /** A convenience class to let you configure options straightforwardly; don't instantiate by hand.
  * 
@@ -26,7 +26,7 @@ public class SitemapGeneratorBuilder<G extends SitemapGenerator<?,?>> extends Ab
 	 * @param baseDir Sitemap files will be generated in this directory as either "sitemap.xml" or "sitemap1.xml" "sitemap2.xml" and so on.
 	 * @param sitemapGeneratorClass the class of the generator the builder will create
 	 */
-	public SitemapGeneratorBuilder(URL baseUrl, File baseDir, Class<G> sitemapGeneratorClass) {
+	public SitemapGeneratorBuilder(URL baseUrl, Path baseDir, Class<G> sitemapGeneratorClass) {
 		super(baseUrl, baseDir);
 		this.sitemapGeneratorClass = sitemapGeneratorClass;
 	}
@@ -37,7 +37,7 @@ public class SitemapGeneratorBuilder<G extends SitemapGenerator<?,?>> extends Ab
 	 * @param baseDir Sitemap files will be generated in this directory as either "sitemap.xml" or "sitemap1.xml" "sitemap2.xml" and so on.
 	 * @param sitemapGeneratorClass the class of the generator the builder will create
 	 */
-	public SitemapGeneratorBuilder(String baseUrl, File baseDir, Class<G> sitemapGeneratorClass) throws MalformedURLException {
+	public SitemapGeneratorBuilder(String baseUrl, Path baseDir, Class<G> sitemapGeneratorClass) throws MalformedURLException {
 		this(new URL(baseUrl), baseDir, sitemapGeneratorClass);
 	}
 	
